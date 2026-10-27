@@ -4,6 +4,9 @@ A Renode virtual prototype running a quantized MNIST handwritten-digit classifie
 on LiteX/VexRiscv Linux, with a custom accelerator model, functional tests, and
 documentation. No physical hardware is required.
 
+All supported host execution uses the Igny CLI: workspace setup, simulator
+launch, and optional cross-compilation.
+
 The accelerator is a Python behavioral peripheral mapped at `0xF0010000`.
 The classifier runs on the simulated RISC-V CPU and sends every neural-network
 dot product to that peripheral through memory-mapped registers.
@@ -46,26 +49,14 @@ guest has no root password. Then run:
 ./mnist_classify
 ```
 
-These commands run inside the guest UART shell. The Renode Monitor is a separate
+These are guest programs: they execute on the simulated RISC-V CPU inside the
+virtual prototype launched through Igny. The Renode Monitor is a separate
 console. Close Renode after the demonstration; guest filesystem changes are
 temporary.
 
-## Other launch options
-
-With Renode installed directly, run from the repository root:
-
-```sh
-renode --console scripts/litex_vexriscv_accel.resc -e s --hide-log
-```
-
-On a Bash host, `bash launch.sh` uses that direct command. `bash run_demo.sh`
-syncs the Igny workspace first and starts the same platform. It assumes Igny is
-already initialized; it does not depend on a private activation script.
-
-The supplied lock is for Windows. On Linux, install the Linux Renode 1.16.1
-artifact into `mnist-demo` and generate a local lock with
-`igny workspace lock`, or use a standalone Renode installation. The Linux path
-was not rerun during this release preparation.
+The supported launch command is `igny run renode`. The supplied lock is for
+Windows. Linux execution requires a separately provisioned Igny environment and
+a Linux-specific lock; that path was not rerun during this release preparation.
 
 ## Model and accelerator
 
@@ -116,46 +107,44 @@ boot. The four programs above completed successfully in that guest.
 |-- scripts/litex_vexriscv_accel.resc
 |-- src/
 |-- crucible.toml
-|-- crucible.lock
-|-- launch.sh
-`-- run_demo.sh
+`-- crucible.lock
 ```
 
 `src/ignytion_accel.py` is required at runtime. The other sources are supplied for
 rebuilding or retraining. The original training dataset is not bundled.
 
-## Optional rebuild and training
+## Optional rebuild through Igny
 
-Use a RISC-V **Linux** cross-compiler, such as the
-`riscv32-buildroot-linux-musl-gcc` provided by the Igny `riscv32-gcc` package.
-A bare-metal `riscv-none-elf-gcc` toolchain does not provide this Linux userspace
-build environment.
+The rebuild uses a RISC-V **Linux** cross-compiler acquired and run through Igny.
+In an initialized Igny shell on Linux/WSL, from the repository root, create a
+separate build environment and install the compiler:
 
 ```sh
-riscv32-buildroot-linux-musl-gcc -static -O2 -o binaries/test_accel src/test_accel.c
-riscv32-buildroot-linux-musl-gcc -static -O2 -o binaries/mnist_classify src/mnist_classify.c
-riscv32-buildroot-linux-musl-gcc -static -O2 -o binaries/ignytion_banner src/banner.c
-riscv32-buildroot-linux-musl-gcc -static -O2 -o binaries/hello_world_ignytion src/hello_world_ignytion.c
+igny env create mnist-build
+igny compiler install riscv32 --env mnist-build
 ```
+
+If that environment already exists, use it. Build the programs with:
+
+```sh
+igny run --env mnist-build riscv32-buildroot-linux-musl-gcc -static -O2 -Wl,--strip-debug -o binaries/test_accel src/test_accel.c
+igny run --env mnist-build riscv32-buildroot-linux-musl-gcc -static -O2 -o binaries/mnist_classify src/mnist_classify.c
+igny run --env mnist-build riscv32-buildroot-linux-musl-gcc -static -O2 -o binaries/ignytion_banner src/banner.c
+igny run --env mnist-build riscv32-buildroot-linux-musl-gcc -static -O2 -o binaries/hello_world_ignytion src/hello_world_ignytion.c
+```
+
+This optional build environment is separate from the supplied Windows runtime
+lock, which contains only Renode.
 
 To use a rebuilt executable in the guest, replace the matching `/root/` file in
 the uncompressed `newc` CPIO archive
 `binaries/custom_rootfs/rootfs_copy`, preserving its executable permissions.
 Updating only the loose binary in `binaries/` does not update the running guest.
 
-Retraining additionally requires Python, PyTorch, Torchvision, and NumPy:
-
-```sh
-cd src
-python3 train_mnist.py -o mnist_model.h
-```
-
-The training script downloads MNIST into `src/data/`, trains the model, and
-exports weights and selected images into the header. Rebuild and repackage the
-classifier afterward. New training runs can produce different models.
-
-`src/test_accel.sh` is an optional `devmem` demonstration. It prints register
-values for manual inspection; use `test_accel` for explicit pass/fail checks.
+`src/train_mnist.py` is retained as the model-generation source. Retraining
+requires additional dependencies that are not provisioned by the supplied Igny
+runtime. The supported classifier workflow uses the included model header and
+guest executable through the Igny-managed virtual prototype.
 
 ## Documentation
 
