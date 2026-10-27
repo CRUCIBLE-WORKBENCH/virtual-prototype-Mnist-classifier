@@ -1,0 +1,36 @@
+using sysbus
+
+mach create
+machine LoadPlatformDescription @platforms/cpus/litex_vexriscv_accel.repl
+machine PyDevFromFile @src/ignytion_accel.py 0xF0010000 0x100 true "ignytion_accel"
+
+sysbus SilenceRange <0xf0004000 0x100> # SDRAM
+sysbus SilenceRange <0xf0009000 0x100> # ETH PHY
+
+showAnalyzer uart
+
+$kernel?=@binaries/kernel
+$rootfs?=@binaries/custom_rootfs/rootfs_copy
+#$rootfs?=@binaries/rootfs
+$dtb?=@binaries/dtb
+$emulator?=@binaries/bios
+
+
+macro reset
+"""
+    ### Linux kernel
+    sysbus LoadBinary $kernel 0xc0000000
+
+    ### rootfs
+    sysbus LoadBinary $rootfs 0xc0800000
+
+    ### dts
+    sysbus LoadFdt $dtb 0xc1000000
+
+    ### VexRiscv BIOS aka emulator
+    sysbus LoadBinary $emulator 0x20000000
+
+    cpu PC 0x20000000
+"""
+
+runMacro $reset

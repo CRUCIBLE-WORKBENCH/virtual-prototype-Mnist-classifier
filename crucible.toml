@@ -1,0 +1,9 @@
+[workspace]
+name = "virtual-prototyping-mnist-classifier"
+id = "virtual-prototyping-mnist-classifier-37054545"
+environment = "mnist-demo"
+environments = [ "mnist-demo",]
+
+[workspace.metadata]
+managed = false
+created_at = "2026-10-27T17:05:55.105963+00:00"

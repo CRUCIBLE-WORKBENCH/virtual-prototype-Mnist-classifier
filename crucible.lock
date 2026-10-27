@@ -1,0 +1,21 @@
+{
+  "active_environment": "mnist-demo",
+  "environments": [
+    {
+      "name": "mnist-demo",
+      "stack": "default",
+      "tools": [
+        {
+          "artifact_id": "igny_windows_renode_1.16.1.0.tar.gz",
+          "checksum": "sha256:0919141b9f6e59bab3cd9a74897bc653a096bdce5a379bbae4abbf76bef82e93",
+          "enabled": true,
+          "name": "renode",
+          "platform": "windows-x86_64",
+          "source": "artifact",
+          "version": "1.16.1"
+        }
+      ]
+    }
+  ],
+  "schema_version": 1
+}
